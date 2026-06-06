@@ -1,0 +1,51 @@
+///|
+using @respo_node {div, span, button}
+
+///|
+using @css {respo_style}
+
+///|
+let app_store_key : String = "mbt-workflow"
+
+///|
+enum GlobalEvent {}
+
+///|
+fn view(
+  store : Store,
+) -> @respo_node.RespoNode[ActionOp, GlobalEvent] raise @respo_node.RespoCommonError {
+  if false {
+    raise @respo_node.RespoCommonError("guarded")
+  }
+  // @dom_ffi.log("Store to render: " + store.to_json().stringify(indent=2))
+  div(class_name=@respo.ui_global, style=respo_style(padding=Px(12)), [
+    comp_counter(store.states.pick("counter"), store.counted),
+  ])
+}
+
+///|
+fn main {
+  let window = @dom_ffi.window()
+  if window.document().query_selector(".app") is Some(mount_target) {
+    let mount_target = mount_target.reinterpret_as_node()
+    let app : @respo.RespoApp[Store] = {
+      store: Ref(@respo.try_load_storage(app_store_key)),
+      mount_target,
+      storage_key: app_store_key,
+    }
+    app.backup_model_beforeunload()
+    // @dom_ffi.log("store: " + app.store.val.to_json().stringify(indent=2))
+    app.render_loop(() => view(app.store.val), (op) => {
+      if !(op is StatesChange(_)) {
+        @dom_ffi.log("Action: \{op}")
+      }
+      app.store.val = app.store.val.update(op)
+    })
+    let dev_mode = @dom_ffi.new_url_search_params(window.location().search()).get(
+      "mode",
+    )
+    @dom_ffi.log("dev mode: \{dev_mode}")
+  } else {
+    @dom_ffi.log("No mount target found")
+  }
+}
