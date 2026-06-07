@@ -173,3 +173,38 @@ pub fn split_docs_segments(docs : String) -> Array[DocsSegment] {
   }
   result
 }
+
+///|
+/// Split Markdown into docco sections by `##` headings.
+/// Each section's full markdown (including fenced blocks) goes in `docs`;
+/// `code` is left empty — blocks are extracted via `split_docs_segments`.
+pub fn parse_markdown_docco(source : String) -> Array[DoccoSection] {
+  let lines = source.split("\n").map(StringView::to_owned).collect()
+  let sections : Array[DoccoSection] = []
+  let buf : Array[String] = []
+  for line in lines {
+    if line.has_prefix("## ") && buf.length() > 0 {
+      sections.push({ docs: buf.join("\n"), code: "" })
+      buf.clear()
+    }
+    buf.push(line)
+  }
+  if buf.length() > 0 {
+    let text = buf.join("\n")
+    if text.trim(char_set=" \n\r\t") != "" {
+      sections.push({ docs: text, code: "" })
+    }
+  }
+  sections
+}
+
+///|
+/// Auto-detect format: Markdown (`#` headings) or legacy `//` docco comments.
+pub fn parse_content(source : String) -> Array[DoccoSection] {
+  let trimmed = source.trim(char_set=" \n\r\t").to_owned()
+  if trimmed.has_prefix("#") || trimmed.has_prefix("##") {
+    parse_markdown_docco(source)
+  } else {
+    parse_docco(source)
+  }
+}

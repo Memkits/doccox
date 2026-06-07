@@ -99,27 +99,30 @@ The dot-notation is designed to be extensible. Potential future renderers:
 
 In **Docco mode**, the input source is parsed as follows:
 
-1. Lines starting with `//` are treated as documentation (comment) lines
-2. Consecutive comment lines form a docs block
-3. Consecutive non-comment lines form a code block
-4. Each (docs, code) pair is a **section**
-5. The docs part is rendered as Markdown (with extended code fence support)
-6. The code part is displayed as a plain code block
+1. Preferred format is **top-level Markdown** (`#`, `##`, paragraphs, fences)
+2. Markdown is split by section headings (`## ...`) into doc sections
+3. Fenced blocks are extracted from docs:
+   - ` ```lang.action ` => extended renderer block
+   - ` ```lang ` => plain code block
+4. Left column renders prose markdown; right column renders extracted code blocks
+5. Legacy `//` comment-style docco input is still supported for compatibility
 
 Example input:
 
-```javascript
-// # My Module
-//
-// This function adds two numbers.
-//
-// ```js.run
-// add(3, 4); // => 7
-// ```
+```markdown
+# My Module
 
+This function adds two numbers.
+
+## Try it
+
+```js.run
 function add(a, b) {
   return a + b;
 }
+
+console.log(add(3, 4)); // => 7
+```
 ```
 
 This produces two columns: documentation on the left, code on the right.

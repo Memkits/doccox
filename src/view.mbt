@@ -119,12 +119,12 @@ fn comp_markdown_view(store : Store) -> RespoNode[ActionOp, GlobalEvent] {
 fn comp_docco_view(
   store : Store,
 ) -> RespoNode[ActionOp, GlobalEvent] raise RespoCommonError {
-  let sections = parse_docco(store.content)
+  let sections = parse_content(store.content)
   if sections.is_empty() {
     return div(class_name="empty-docco", [
-      span(inner_text="选择一个示例，或粘贴带注释的源代码", []),
+      span(inner_text="选择一个示例，或粘贴 Markdown 文档", []),
       span(
-        inner_text="// 注释行 → 左侧文档   非注释行 → 右侧代码",
+        inner_text="左侧文档 · 右侧代码块（```lang.action 扩展渲染）",
         class_name="hint",
         [],
       ),
@@ -170,9 +170,13 @@ fn comp_docco_section(
         let block_id = "\{sec_idx}:\{seg_idx}"
         let run_output = store.run_outputs.get(block_id)
         let show_source = store.show_source.get(block_id).unwrap_or(false)
-        code_children.push(
-          comp_fenced_inline(block, block_id, run_output, show_source),
-        )
+        if block.renderer != "" {
+          code_children.push(
+            comp_fenced_inline(block, block_id, run_output, show_source),
+          )
+        } else {
+          code_children.push(pre(inner_text=block.content))
+        }
       }
     }
   }
