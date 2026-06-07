@@ -1,4 +1,92 @@
+# Doccox — Literate Programming Viewer
+
+Doccox is a browser-based [docco](https://github.com/jashkenas/docco)-style
+literate programming viewer. It parses source files with `//` comment blocks
+into two-column documentation: **left** = rendered markdown prose, **right** =
+source code + interactive extended code blocks.
+
+## Project Layout
+
+```
+doccox/
+├── index.html              # Entry point; includes ECharts + marked.js CDNs
+├── src/
+│   ├── main.mbt            # App bootstrap (Respo render loop)
+│   ├── store.mbt           # App state (TabMode, ActionOp, Store)
+│   ├── view.mbt            # All UI rendering: tabs, docco sections, fenced blocks
+│   ├── docco_parser.mbt    # Parse // comments → DoccoSection + DocsSegment
+│   ├── code_block.mbt      # moonbit_fake_output() helper
+│   ├── ffi.mbt             # JS FFI: echarts_render_svg, js_eval_capture, md_to_html
+│   ├── samples.mbt         # Built-in demo content strings
+│   └── moon.pkg.json
+├── RFCs/
+│   └── 001-extended-code-fence.md   # Format spec
+└── moon.mod.json
+```
+
+## Key Architecture
+
+**Docco parsing** (`docco_parser.mbt`):
+- `parse_docco(source)` → `Array[DoccoSection]` — splits `//` comment blocks
+  (docs) from code blocks. Each section = `{docs, code}`.
+- `split_docs_segments(docs)` → `Array[DocsSegment]` — splits docs text into
+  `Plain(markdown)` and `Fenced(block)` segments.
+
+**Extended code fences** (RFC 001):
+- ` ```js.run ` — runnable JavaScript, captured console.log output shown below
+- ` ```json.echarts ` — ECharts chart rendered via `echarts.init` (ssr:true)
+- ` ```moonbit.demo ` — simulated MoonBit output (fake demo)
+
+**Layout rule**: left column = plain markdown text only; right column = source
+code + fenced interactive blocks.
+
+## Dev Workflow
+
+```bash
+# Build MoonBit to JS (debug)
+moon build --target js --debug
+
+# Watch mode (auto-rebuild on .mbt changes)
+moon build --target js --debug --watch
+
+# Start Vite dev server
+yarn vite --port 5174
+
+# Type check only
+moon check
+```
+
+**Important**: After any `.mbt` change, run `moon build --target js --debug`
+before refreshing the browser. The Vite server serves the built
+`./_build/js/debug/build/app.js` directly.
+
+## CSS Class Names (index.html)
+
+All CSS lives in `index.html`. Key classes:
+
+| Class | Location | Purpose |
+|-------|----------|---------|
+| `.tab-bar` | top | Mode tabs (Markdown / Docco) |
+| `.sample-bar` | top | Sample selector buttons |
+| `.docco-section` | content | Flex row per parsed section |
+| `.docco-docs` | left 43% | Markdown text only |
+| `.docco-code` | right 57% | Source code + interactive blocks |
+| `.ext-block` | right | Extended fenced block container |
+| `.ext-header` | right | Block header with lang label + button |
+| `.ext-body` | right | Dark code display area |
+| `.ext-output` | right | Green output area after Run |
+| `.ext-chart-container` | right | ECharts SVG chart container |
+
+## Dependency Notes
+
+- `tiye/respo@0.3.0` — RespoNode takes **2** type params `[ActionOp, GlobalEvent]`
+- `tiye/respo-markdown` — **incompatible** with respo@0.3.0 (uses old 1-param API)
+  → use `md_to_html` FFI + `marked.js` CDN instead
+- ECharts SSR: use `echarts.init(null, null, {renderer:'svg', ssr:true})` then
+  `.renderToSVGString()` — NOT `echarts.renderToSVGString()`
+
 # MoonBit Project Layouts
+
 
 You have the ability to detect specific types of MoonBit projects and work with
 them adaptively.
